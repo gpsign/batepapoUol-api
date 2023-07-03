@@ -53,7 +53,7 @@ app.post("/participants", async (req, res) => {
             });
             res.send(201);
         }
-        else res.send(209);
+        else res.send(409);
     }
     catch (error) {
         console.log(error);
@@ -65,21 +65,25 @@ app.post("/messages", async (req, res) => {
 
     try {
         const validation = messageSchema.validate(req.body, { abortEarly: false });
-
         let exist = await db.collection("participants").findOne({ name: req.header.User })
-        if (!exist) res.send(422);
 
         if (validation.error) {
             const errors = validation.error.details.map((detail) => detail.message);
             return res.status(422).send(errors);
         }
-        db.collection("messages").insertOne({
-            to: req.body.to,
-            text: req.body.text,
-            type: req.body.type,
-            time: dayjs().format('HH:mm:ss'),
-        })
-        res.send(201);
+        else if (!exist) res.send(422);
+        else {
+
+
+            db.collection("messages").insertOne({
+                to: req.body.to,
+                text: req.body.text,
+                type: req.body.type,
+                time: dayjs().format('HH:mm:ss'),
+            })
+            res.send(201);
+        }
+
     } catch (error) {
         console.log(error);
     }
