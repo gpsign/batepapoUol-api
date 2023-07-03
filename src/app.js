@@ -25,6 +25,10 @@ const userSchema = joi.object({
     name: joi.string().required(),
 });
 
+const userStatusSchema = joi.object({
+    User: joi.string().required(),
+});
+
 const messageSchema = joi.object({
     to: joi.string().required(),
     text: joi.string().required(),
@@ -89,6 +93,27 @@ app.post("/messages", async (req, res) => {
     }
 
 })
+
+app.put("/status", async (req, res) => {
+    const validation = userStatusSchema.validate(req.header, { abortEarly: false });
+
+    try {
+        if (validation.error) {
+            const errors = validation.error.details.map((detail) => detail.message);
+            return res.status(404).send(errors);
+        }
+        let exist = await db.collection("participants").findOne({ name: req.header.User });
+        if (!exist) res.send(404);
+        else {
+            await db
+                .collection("participants")
+                .updateOne({ name: req.header.User }, { $set: { lastStatus: Date.now() } });
+            res.send(200);
+        }
+    }
+    catch (error) { console.log(error); }
+})
+
 
 app.get("/participants", async (req, res) => {
     res.send(await db.collection("participants").find().toArray());
