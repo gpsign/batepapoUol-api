@@ -92,7 +92,11 @@ app.post("/messages", async (req, res) => {
             const errors = validation.error.details.map((detail) => detail.message);
             return res.status(422).send(errors);
         }
-        else if (!exist) res.send(422);
+        else if (!exist) {
+            console.log(exist);
+            res.send(422);
+        }
+
         else {
 
 
@@ -137,20 +141,21 @@ app.get("/participants", async (req, res) => {
 })
 
 app.get("/messages", async (req, res) => {
-    let limit = Number(parseInt(req.query.limit));
-    if (limit < 1 || isNaN(limit)) res.send(422);
-    else {
-        let messages = await db.collection("messages").find({
-            $or: [
-                { to: req.headers.user, type: "private_message" },
-                { from: req.headers.user, type: "private_message" },
-                { to: "Todos", type: "message" }
-            ]
-        }).toArray();
 
-        if (limit = undefined) res.send(messages);
-        else res.send(messages.splice(0, limit - 1));
-    }
+    let messages = await db.collection("messages").find({
+        $or: [
+            { to: req.headers.user, type: "private_message" },
+            { from: req.headers.user, type: "private_message" },
+            { to: "Todos", type: "message" }
+        ]
+    }).toArray();
+
+    let limit = req.query.limit;
+    console.log(limit);
+    if (limit == undefined) return res.send(messages);
+    limit = Number(limit);
+    if (limit < 1 || isNaN(limit)) res.send(422);
+    else res.send(messages.splice(0, limit));
 })
 
 app.listen(5000);
