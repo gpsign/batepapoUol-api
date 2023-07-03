@@ -7,8 +7,6 @@ import dayjs from "dayjs";
 
 dotenv.config();
 
-
-
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 try {
     await mongoClient.connect();
@@ -23,8 +21,21 @@ app.use(express.json());
 app.use(cors());
 
 setInterval(() => {
-    db.collection("participants").find({ lastStatus: { $gt } })
-})
+    let inativos = db.collection("participants").find({ lastStatus: { $gt: Date.now() - 10000 } }).toArray();
+
+    inativos.map((user) => {
+        db.collection("messages").insertOne({
+            from: user.name,
+            to: 'Todos',
+            text: 'sai da sala...',
+            type: 'status',
+            time: dayjs().format('HH:mm:ss')
+        });
+    });
+
+    db.collection("participants").deleteMany({ lastStatus: { $gt: Date.now() - 10000 } });
+
+}, 15000);
 
 const userSchema = joi.object({
     name: joi.string().required(),
