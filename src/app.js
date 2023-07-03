@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 dotenv.config();
 
 
+
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 try {
     await mongoClient.connect();
@@ -20,6 +21,10 @@ const db = mongoClient.db();
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+setInterval(() => {
+    db.collection("participants").find({ lastStatus: { $gt } })
+})
 
 const userSchema = joi.object({
     name: joi.string().required(),
@@ -69,7 +74,7 @@ app.post("/messages", async (req, res) => {
 
     try {
         const validation = messageSchema.validate(req.body, { abortEarly: false });
-        let exist = await db.collection("participants").findOne({ name: req.header.User })
+        let exist = await db.collection("participants").findOne({ name: req.headers.User })
 
         if (validation.error) {
             const errors = validation.error.details.map((detail) => detail.message);
@@ -95,19 +100,19 @@ app.post("/messages", async (req, res) => {
 })
 
 app.put("/status", async (req, res) => {
-    const validation = userStatusSchema.validate(req.header, { abortEarly: false });
+    const validation = userStatusSchema.validate(req.headers, { abortEarly: false });
 
     try {
         if (validation.error) {
             const errors = validation.error.details.map((detail) => detail.message);
             return res.status(404).send(errors);
         }
-        let exist = await db.collection("participants").findOne({ name: req.header.User });
+        let exist = await db.collection("participants").findOne({ name: req.headers.User });
         if (!exist) res.send(404);
         else {
             await db
                 .collection("participants")
-                .updateOne({ name: req.header.User }, { $set: { lastStatus: Date.now() } });
+                .updateOne({ name: req.headers.User }, { $set: { lastStatus: Date.now() } });
             res.send(200);
         }
     }
@@ -125,8 +130,8 @@ app.get("/messages", async (req, res) => {
     else {
         let messages = await db.collection("messages").find({
             $or: [
-                { to: req.header.User, type: "private_message" },
-                { from: req.header.User, type: "private_message" },
+                { to: req.headers.User, type: "private_message" },
+                { from: req.headers.User, type: "private_message" },
                 { to: "Todos", type: "message" }
             ]
         }).toArray();
