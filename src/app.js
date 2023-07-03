@@ -101,6 +101,7 @@ app.post("/messages", async (req, res) => {
 
             db.collection("messages").insertOne({
                 to: req.body.to,
+                from: req.headers.user,
                 text: req.body.text,
                 type: req.body.type,
                 time: dayjs().format('HH:mm:ss'),
