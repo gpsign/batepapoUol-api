@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(cors());
 
 setInterval(async () => {
-    let inativos = await db.collection("participants").find({ lastStatus: { $gt: Date.now() - 10000 } }).toArray();
+    let inativos = await db.collection("participants").find({ lastStatus: { $lt: Date.now() - 10000 } }).toArray();
 
     inativos.map((user) => {
         db.collection("messages").insertOne({
@@ -33,7 +33,7 @@ setInterval(async () => {
         });
     });
 
-    db.collection("participants").deleteMany({ lastStatus: { $gt: Date.now() - 10000 } });
+    db.collection("participants").deleteMany({ lastStatus: { $lt: Date.now() - 10000 } });
 
 }, 15000);
 
