@@ -99,7 +99,6 @@ app.post("/messages", async (req, res) => {
 
         else {
 
-
             db.collection("messages").insertOne({
                 to: req.body.to,
                 text: req.body.text,
@@ -146,7 +145,7 @@ app.get("/messages", async (req, res) => {
         $or: [
             { to: req.headers.user, type: "private_message" },
             { from: req.headers.user, type: "private_message" },
-            { to: "Todos", type: "message" }
+            { to: "Todos"}
         ]
     }).toArray();
 
