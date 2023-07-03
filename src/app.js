@@ -91,19 +91,20 @@ app.get("/participants", async (req, res) => {
 })
 
 app.get("/messages", async (req, res) => {
-    let limit = parseInt(req.query.limit);
-    if (limit < 1) res.send(422);
+    let limit = Number(parseInt(req.query.limit));
+    if (limit < 1 || isNaN(limit)) res.send(422);
+    else {
+        let messages = await db.collection("messages").find({
+            $or: [
+                { to: req.header.User, type: "private_message" },
+                { from: req.header.User, type: "private_message" },
+                { to: "Todos", type: "message" }
+            ]
+        }).toArray();
 
-    let messages = await db.collection("messages").find({
-        $or: [
-            { to: req.header.User, type: "private_message" },
-            { from: req.header.User, type: "private_message" },
-            { to: "Todos", type: "message" }
-        ]
-    }).toArray();
-
-    if (limit = undefined) res.send(messages);
-    else res.send(messages.splice(0, limit - 1));
+        if (limit = undefined) res.send(messages);
+        else res.send(messages.splice(0, limit - 1));
+    }
 })
 
 app.listen(5000);
