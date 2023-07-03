@@ -20,8 +20,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-setInterval(() => {
-    let inativos = db.collection("participants").find({ lastStatus: { $gt: Date.now() - 10000 } }).toArray();
+setInterval(async () => {
+    let inativos = await db.collection("participants").find({ lastStatus: { $gt: Date.now() - 10000 } }).toArray();
 
     inativos.map((user) => {
         db.collection("messages").insertOne({
@@ -42,8 +42,8 @@ const userSchema = joi.object({
 });
 
 const userStatusSchema = joi.object({
-    User: joi.string().required(),
-});
+    user: joi.string().required(),
+}).unknown();
 
 const messageSchema = joi.object({
     to: joi.string().required(),
@@ -83,9 +83,10 @@ app.post("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
 
+    console.log(req.headers);
     try {
         const validation = messageSchema.validate(req.body, { abortEarly: false });
-        let exist = await db.collection("participants").findOne({ name: req.headers.User })
+        let exist = await db.collection("participants").findOne({ name: req.headers.user })
 
         if (validation.error) {
             const errors = validation.error.details.map((detail) => detail.message);
@@ -110,7 +111,7 @@ app.post("/messages", async (req, res) => {
 
 })
 
-app.put("/status", async (req, res) => {
+app.post("/status", async (req, res) => {
     const validation = userStatusSchema.validate(req.headers, { abortEarly: false });
 
     try {
@@ -118,12 +119,12 @@ app.put("/status", async (req, res) => {
             const errors = validation.error.details.map((detail) => detail.message);
             return res.status(404).send(errors);
         }
-        let exist = await db.collection("participants").findOne({ name: req.headers.User });
+        let exist = await db.collection("participants").findOne({ name: req.headers.user });
         if (!exist) res.send(404);
         else {
             await db
                 .collection("participants")
-                .updateOne({ name: req.headers.User }, { $set: { lastStatus: Date.now() } });
+                .updateOne({ name: req.headers.user }, { $set: { lastStatus: Date.now() } });
             res.send(200);
         }
     }
@@ -141,8 +142,8 @@ app.get("/messages", async (req, res) => {
     else {
         let messages = await db.collection("messages").find({
             $or: [
-                { to: req.headers.User, type: "private_message" },
-                { from: req.headers.User, type: "private_message" },
+                { to: req.headers.user, type: "private_message" },
+                { from: req.headers.user, type: "private_message" },
                 { to: "Todos", type: "message" }
             ]
         }).toArray();
